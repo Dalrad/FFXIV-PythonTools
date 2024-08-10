@@ -1,6 +1,5 @@
 import numpy as np
 import requests
-import json
 
 
 def callItemSearchAPI(item):
