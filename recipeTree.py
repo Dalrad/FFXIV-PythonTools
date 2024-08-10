@@ -49,9 +49,6 @@ def recursiveItemRecipeSearch(itemName):
 
     return recursiveRecipeLookup(recipeURL=results.get("Results")[0].get("Url"))
 
-
-# Maybe convert parentItem to parentItemList
-# Then you could do a for loop: to traverse down to get through top level recipe into child recipes
 def recursiveRecipeLookup(dataset=dict(), recipeURL="", parentItem=""):
     if recipeURL == "":
         return dataset
