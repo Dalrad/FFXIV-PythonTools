@@ -1,5 +1,6 @@
 import numpy as np
 import requests
+import json
 
 
 def callItemSearchAPI(item):
@@ -49,7 +50,8 @@ def recursiveItemRecipeSearch(itemName):
 
     return recursiveRecipeLookup(recipeURL=results.get("Results")[0].get("Url"))
 
-def recursiveRecipeLookup(dataset=dict(), recipeURL="", parentItem=""):
+
+def recursiveRecipeLookup(dataset=dict(), recipeURL=""):
     if recipeURL == "":
         return dataset
 
@@ -59,55 +61,35 @@ def recursiveRecipeLookup(dataset=dict(), recipeURL="", parentItem=""):
         if recipeApiResult.get("AmountIngredient" + str(i)) != 0:
             recipeName = recipeApiResult.get("ItemIngredient" + str(i)).get("Name")
 
-            if parentItem != "":
-                childRecipeList = dataset.get(parentItem).get("childIngredients")
-                childRecipeList.append(
-                    dict(
-                        {
-                            "name": recipeName,
-                            "quantity": dataset.get(parentItem).get("quantity"),
-                        }
-                    )
-                )
-                dataset[parentItem] = {
-                    "name": parentItem,
-                    "price": dataset.get(parentItem).get("price"),
-                    "id": dataset.get(parentItem).get("id"),
-                    "quantity": dataset.get(parentItem).get("quantity"),
-                    "childIngredients": childRecipeList,
+            if recipeName not in dataset:
+                dataset[recipeName] = {
+                    "name": recipeApiResult.get("ItemIngredient" + str(i)).get(
+                        "Name_en"
+                    ),
+                    "price": 0,
+                    "id": recipeApiResult.get("ItemIngredient" + str(i)).get("ID"),
+                    "quantity": recipeApiResult.get("AmountIngredient" + str(i)),
+                    "childIngredientsDict": dict(),
                 }
             else:
-                if recipeName not in dataset:
-                    dataset[recipeName] = {
-                        "name": recipeApiResult.get("ItemIngredient" + str(i)).get(
-                            "Name_en"
-                        ),
-                        "price": 0,
-                        "id": recipeApiResult.get("ItemIngredient" + str(i)).get("ID"),
-                        "quantity": recipeApiResult.get("AmountIngredient" + str(i)),
-                        "childIngredients": list(),
-                    }
-                else:
-                    dataset[recipeName] = {
-                        "name": recipeName,
-                        "price": dataset.get(recipeName).get("price"),
-                        "id": dataset.get(recipeName).get("id"),
-                        "quantity": dataset.get(recipeName).get("quantity"),
-                        "childIngredients": dataset.get(recipeName).get(
-                            "childIngredients"
-                        ),
-                    }
+                dataset[recipeName] = {
+                    "name": recipeName,
+                    "price": dataset.get(recipeName).get("price"),
+                    "id": dataset.get(recipeName).get("id"),
+                    "quantity": dataset.get(recipeName).get("quantity"),
+                    "childIngredients": dataset.get(recipeName).get("childIngredients"),
+                }
 
-                if recipeApiResult.get("ItemIngredientRecipe" + str(i)) is not None:
-                    for item in recipeApiResult.get("ItemIngredientRecipe" + str(i)):
-                        dataset = recursiveRecipeLookup(
-                            dataset=dataset,
-                            recipeURL=item.get("Url"),
-                            parentItem=recipeName,
-                        )
+            if recipeApiResult.get("ItemIngredientRecipe" + str(i)) is not None:
+                for item in recipeApiResult.get("ItemIngredientRecipe" + str(i)):
+                    dataset[recipeName]["childIngredientsDict"] = recursiveRecipeLookup(
+                        dataset=dataset[recipeName]["childIngredientsDict"],
+                        recipeURL=item.get("Url"),
+                    )
 
     return dataset
 
 
 if __name__ == "__main__":
-    print(recursiveItemRecipeSearch("Facet Turban of Scouting"))
+    shoppingList = recursiveItemRecipeSearch("Facet Turban of Scouting")
+    print(shoppingList)
